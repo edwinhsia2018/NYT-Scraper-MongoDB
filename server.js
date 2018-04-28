@@ -1,5 +1,5 @@
 var express = require("express");
-var bodyparser = require("body-parser");
+var bodyParser = require("body-parser");
 var mongoose = require("mongoose");
 var request = require("request");
 
@@ -7,7 +7,7 @@ var request = require("request");
 var cheerio = require("cheerio");
 
 // Requiring Models
-var db = require(".models");
+var db = require("./models");
 
 var PORT = 3000;
 
@@ -28,14 +28,14 @@ app.get("/scrape", function (req, res) {
         var results = [];
 
         $(".wsj-headline-link").each(function (i, element) {
-            var link = $(element).children().attr("href");
+            var url = $(element).children().attr("href");
             var title = $(element).children().text();
             var summary = $(element).children(".wsj-summary").text();
 
             db.scrapedData.insert({
                 title: title,
                 summary: summary,
-                link, link
+                url: url
             }),
                 function (err, inserted) {
                     if (err) {
@@ -49,7 +49,7 @@ app.get("/scrape", function (req, res) {
     res.send("scrape complete");
 })
 
-app.get("/all", function (req, res) {
+app.get("/articles", function (req, res) {
     db.scrapedData.find({}, function (error, found) {
         if (error) {
             console.log(error);
@@ -57,6 +57,19 @@ app.get("/all", function (req, res) {
         else {
             res.json(found);
         }
+    })
+})
+
+app.post("/articles/:id", function(req, res){
+    db.Comment.create(req.body)
+    .then(function(dbComment){
+        return db.Article.findOneAndUpdate({ _id: req.params.id}, {comment: dbComment._id}, { new: true })
+    })
+    .then(function(dbArticle){
+        res.json(dbArticle);
+    })
+    .catch(function(err){
+        res.json(err);
     })
 })
 

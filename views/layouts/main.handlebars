@@ -8,29 +8,25 @@
 	<title>New York Times Scraper</title>
 	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4"
 	 crossorigin="anonymous">
-
-	<link rel="stylesheet" type="text/css" href="css/styles.css" title="no title">
+	<link rel="stylesheet" type="text/css" href="/css/style.css">
 </head>
 
 <body>
-	<header>
-		<a href="/">
-			<div id="sitename">NYT Scraper</div>
-		</a>
-		<a href="/">
-			<button id="all-articles">All Articles</button>
-		</a>
-		<a href="/saved">
-			<button id="saved-articles">Saved Articles</button>
-		</a>
-		<form action="/scrape" method="GET">
-			<button type="submit" id="refresh-articles">Scrape For Newest Articles</button>
-		</form>
-		<form action="/search" method="POST">
-			<button type="submit" id="search-submit">Submit</button>
-			<input type="text" name="search" placeholder="Search for articles" id="search-input">
-		</form>
-	</header>
+	<container>
+		<div class="jumbotron text-center">
+			<h1 class="display-4 text-white" id="sitename">
+				<strong>New York Times Scraper</strong>
+			</h1>
+			<hr class="my-4">
+			<a class="btn btn-primary btn-lg text-white" id="all-articles" role="button">All Articles</a>
+			<a class="btn btn-primary btn-lg text-white" id="saved-articles" role="button" href="/saved">Saved Articles</a>
+			<a class="btn btn-primary btn-lg text-white" id="refresh-articles" role="button" href="/scrape">Scrape for New Articles</a>
+			<form class="form-inline my-2 my-lg-0 search-bar">
+				<input class="form-control mr-sm-2" id="search-input" type="search" placeholder="Search for articles" aria-label="Search">
+				<button type="submit" id="search-submit" class="btn btn-primary">Submit</button>
+			</form>
+		</div>
+	</container>
 	{{{ body }}}
 
 	<div id="addnote">
@@ -48,7 +44,7 @@
 				<br>
 				<textarea rows="7" placeholder="Note" id="note-body"></textarea>
 				<br>
-				<button type="submit" id="add-note">Save Note</button>
+				<button type="button" id="add-note">Save Note</button>
 				<button type="button" id="close-note">Cancel</button>
 			</div>
 		</div>

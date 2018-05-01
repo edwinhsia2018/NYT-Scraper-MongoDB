@@ -3,6 +3,7 @@ var bodyParser = require("body-parser");
 var mongoose = require("mongoose");
 var request = require("request");
 var logger = require("morgan");
+var exphbs = require("express-handlebars");
 
 // Scraping Tools
 var cheerio = require("cheerio");
@@ -23,6 +24,10 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
 mongoose.connect("mongodb://localhost/mongoScraper");
+
+// Handlebars Setup
+app.engine("handlebars", exphbs({defaultLayout: "main"}));
+app.set("view engine", "handlebars");
 
 // Routes
 
@@ -108,7 +113,7 @@ app.get("/saved", function (req, res) {
 });
 
 // Route for updating and saving an article's notes
-app.post("/articles/:id", function (req, res) {
+app.post("/note/:id", function (req, res) {
     db.Note.create(req.body)
         .then(function (dbNote) {
             return db.Article.findOneAndUpdate(

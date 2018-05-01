@@ -2,7 +2,7 @@ var mongoose = require("mongoose");
 var Schema = mongoose.Schema;
 
 var articleSchema = new Schema({
-    headline: {
+    title: {
         type: String,
         trim: true
     },
@@ -10,13 +10,17 @@ var articleSchema = new Schema({
         type: String,
         trim: true
     },
-    url: {
+    link: {
         type: String,
         trim: true
     },
-    photourl: {
+    img: {
         type: String,
         trim: true
+    },
+    saved: {
+        type: Boolean,
+        default: false
     },
     notes: {
         type: Schema.Types.ObjectId,

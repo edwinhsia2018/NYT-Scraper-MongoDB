@@ -27,14 +27,18 @@ mongoose.connect("mongodb://localhost/mongoScraper");
 // Routes
 
 app.get("/scrape", function (req, res) {
-    request("http://www.macrumors.com", function (error, response, html) {
+    request("http://www.nytimes.com", function (error, response, html) {
         var $ = cheerio.load(html);
-
-        $(".article").each(function (i, element) {
-            var result = {};
-            result.link = $(element).children("linkback").attr("href");
-            result.title = $(element).children("title").text();
-            // var summary = $(this).children(".wsj-summary").text();
+        var result = {};
+        $(".story").each(function (i, element) {
+            var link = $(element).find("a").attr("href");
+            var title = $(element).find("li").text();
+            var summary = $(element).find(".summary").text();
+            var img = $(element).children().find("img").attr("src");
+            result.link = link;
+            result.title = title;
+            result.summary = summary;
+            result.img = img;
 
             db.Article.create(result)
                 .then(function (dbArticle) {
@@ -44,30 +48,62 @@ app.get("/scrape", function (req, res) {
                     return res.json(err);
                 });
         });
-        res.send("scrape complete");
+        console.log("scrape complete");
+        res.redirect("/articles");
     })
 })
 
 // Route to get all the articles
-app.get("/articles", function (req, res) {
-    dbm.Article.find({})
+app.get("/", function (req, res) {
+    db.Article.find({}, null, { sort: { created: -1 } }, function (err, data) {
+        if (data.length == 0) {
+            res.render("placeholder", { message: "There's nothing scraped yet.  Please click on 'Scrape' for the latest news articles" });
+        }
+        else {
+            res.render("index", { articles: data });
+        }
+    });
+});
+
+// Route for finding a specific article
+app.get("/articles/:id?", function (req, res) {
+    db.Article.findOne({ _id: req.params.id })
+        .populate("note")
         .then(function (dbArticle) {
-            res.json(dbArticle);
+            res.json(dbArticle)
         })
         .catch(function (err) {
             res.json(err);
         });
 });
 
-// Route for finding a specific article
-app.get("/articles/:id?", function(req, res){
-    db.Article.findOne({ _id: req.params.id })
-    .populate("note")
-    .then(function(dbArticle){
-        res.json(dbArticle)
-    })
-    .catch(function(err){
-        res.json(err);
+// Route for searching the article's text
+app.post("/search", function(req, res) {
+	console.log(req.body.search);
+	Article.find(
+        {$text: {$search: req.body.search, $caseSensitive: false}}, null,
+        {sort: {created: -1}}, function(err, data) {
+		console.log(data);
+		if (data.length === 0) {
+            res.render("placeholder", 
+            {message: "Nothing has been found. Please try other keywords."});
+		}
+		else {
+			res.render("search", {search: data})
+		}
+	})
+});
+
+// Route for accessing saved articles
+app.get("/saved", function (req, res) {
+    Article.find({ saved: true }, null, { sort: { created: -1 } }, function (err, data) {
+        if (data.length === 0) {
+            res.render("placeholder", 
+            { message: "You have not saved any articles yet. Try to save some news by clicking \"Save Article\"!" });
+        }
+        else {
+            res.render("saved", { saved: data });
+        }
     });
 });
 
@@ -75,7 +111,10 @@ app.get("/articles/:id?", function(req, res){
 app.post("/articles/:id", function (req, res) {
     db.Note.create(req.body)
         .then(function (dbNote) {
-            return db.Article.findOneAndUpdate({ _id: req.params.id }, { note: dbNote._id }, { new: true })
+            return db.Article.findOneAndUpdate(
+                { _id: req.params.id },
+                { note: dbNote._id },
+                { new: true })
         })
         .then(function (dbArticle) {
             res.json(dbArticle);
@@ -83,6 +122,22 @@ app.post("/articles/:id", function (req, res) {
         .catch(function (err) {
             res.json(err);
         });
+});
+
+// Route for saving an article
+app.post("/save/:id", function (req, res) {
+    db.Article.findById(req.params.id, function (err, data) {
+        if (data.saved) {
+            Article.findByIdAndUpdate(req.params.id, { $set: { saved: false, status: "Save Article" } }, { new: true }, function (err, data) {
+                res.redirect("/");
+            });
+        }
+        else {
+            Article.findByIdAndUpdate(req.params.id, { $set: { saved: true, status: "Saved" } }, { new: true }, function (err, data) {
+                res.redirect("/saved");
+            });
+        }
+    });
 });
 
 app.listen(PORT, function () {

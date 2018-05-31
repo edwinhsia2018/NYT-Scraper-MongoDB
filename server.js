@@ -11,10 +11,9 @@ var cheerio = require("cheerio");
 // Requiring Models
 var db = require("./models");
 
-var PORT = process.env.PORT || 3000;
-
 // Initializing Express
 var app = express();
+var PORT = process.env.PORT || 3000;
 
 // Morgan logger for request logging
 app.use(logger("dev"));
@@ -23,28 +22,34 @@ app.use(logger("dev"));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
-mongoose.connect("mongodb://localhost/mongoScraper");
+mongoose.connect("mongodb://localhost/NYTScraper");
 
 // Handlebars Setup
-app.engine("handlebars", exphbs({defaultLayout: "main"}));
+app.engine("handlebars", exphbs({ defaultLayout: "main" }));
 app.set("view engine", "handlebars");
 
 // Routes
 
 app.get("/scrape", function (req, res) {
-    request("http://www.nytimes.com", function (error, response, html) {
+    request("http://www.nytimes.com/section/world", function (error, response, html) {
         var $ = cheerio.load(html);
         var result = {};
-        $(".story").each(function (i, element) {
+        $("div.story-body").each(function (i, element) {
             var link = $(element).find("a").attr("href");
-            var title = $(element).find("li").text();
-            var summary = $(element).find(".summary").text();
-            var img = $(element).children().find("img").attr("src");
+            var title = $(element).find("h2.headline").text().trim();
+            var summary = $(element).find("p.summary").text().trim();
+            var img = $(element).parent().find("figure.media").find("img").attr("src");
             result.link = link;
             result.title = title;
-            result.summary = summary;
-            result.img = img;
-
+            if (summary) {
+                result.summary = summary;
+            }
+            if (img) {
+                result.img = img;
+            }
+            else {
+                result.img = $(element).find(".wide-thumb").find("img").attr("src");
+            }
             db.Article.create(result)
                 .then(function (dbArticle) {
                     console.log(dbArticle);
@@ -54,7 +59,7 @@ app.get("/scrape", function (req, res) {
                 });
         });
         console.log("scrape complete");
-        res.redirect("/articles");
+        res.redirect("/");
     })
 })
 
@@ -83,28 +88,28 @@ app.get("/articles/:id?", function (req, res) {
 });
 
 // Route for searching the article's text
-app.post("/search", function(req, res) {
-	console.log(req.body.search);
-	Article.find(
-        {$text: {$search: req.body.search, $caseSensitive: false}}, null,
-        {sort: {created: -1}}, function(err, data) {
-		console.log(data);
-		if (data.length === 0) {
-            res.render("placeholder", 
-            {message: "Nothing has been found. Please try other keywords."});
-		}
-		else {
-			res.render("search", {search: data})
-		}
-	})
+app.post("/search", function (req, res) {
+    console.log(req.body.search);
+    Article.find(
+        { $text: { $search: req.body.search, $caseSensitive: false } }, null,
+        { sort: { created: -1 } }, function (err, data) {
+            console.log(data);
+            if (data.length === 0) {
+                res.render("placeholder",
+                    { message: "Nothing has been found. Please try other keywords." });
+            }
+            else {
+                res.render("search", { search: data })
+            }
+        })
 });
 
 // Route for accessing saved articles
 app.get("/saved", function (req, res) {
     Article.find({ saved: true }, null, { sort: { created: -1 } }, function (err, data) {
         if (data.length === 0) {
-            res.render("placeholder", 
-            { message: "You have not saved any articles yet. Try to save some news by clicking \"Save Article\"!" });
+            res.render("placeholder",
+                { message: "You have not saved any articles yet. Try to save some news by clicking \"Save Article\"!" });
         }
         else {
             res.render("saved", { saved: data });
@@ -146,5 +151,5 @@ app.post("/save/:id", function (req, res) {
 });
 
 app.listen(PORT, function () {
-    console.log("App running on port 3000");
+    console.log("App running on port " + PORT);
 });
